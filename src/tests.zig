@@ -60,7 +60,7 @@ test "extern struct ABI compatibility" {
 test "zflecs.entities.basics" {
     print("\n", .{});
 
-    const world = ecs.init();
+    const world = ecs.init(std.testing.allocator);
     defer _ = ecs.fini(world);
 
     ecs.COMPONENT(world, Position);
@@ -154,7 +154,7 @@ fn registerComponents(world: *ecs.world_t) void {
 test "zflecs.basic" {
     print("\n", .{});
 
-    const world = ecs.init();
+    const world = ecs.init(std.testing.allocator);
     defer _ = ecs.fini(world);
 
     try expect(ecs.is_fini(world) == false);
@@ -302,7 +302,7 @@ fn move(it: *ecs.iter_t) callconv(.c) void {
 test "zflecs.helloworld" {
     print("\n", .{});
 
-    const world = ecs.init();
+    const world = ecs.init(std.testing.allocator);
     defer _ = ecs.fini(world);
 
     ecs.COMPONENT(world, Position);
@@ -352,7 +352,7 @@ fn move_system_with_it(it: *ecs.iter_t, positions: []Position, velocities: []con
 test "zflecs.helloworld_systemcomptime" {
     print("\n", .{});
 
-    const world = ecs.init();
+    const world = ecs.init(std.testing.allocator);
     defer _ = ecs.fini(world);
 
     ecs.COMPONENT(world, Position);
@@ -377,7 +377,7 @@ test "zflecs.helloworld_systemcomptime" {
 }
 
 test "zflecs.try_different_alignments" {
-    const world = ecs.init();
+    const world = ecs.init(std.testing.allocator);
     defer _ = ecs.fini(world);
 
     const AlignmentsToTest = [_]usize{ 1, 2, 4, 8, 16 };
@@ -399,7 +399,7 @@ test "zflecs.try_different_alignments" {
 }
 
 test "zflecs.pairs.tag-tag" {
-    const world = ecs.init();
+    const world = ecs.init(std.testing.allocator);
     defer _ = ecs.fini(world);
 
     const Slowly = struct {};
@@ -416,7 +416,7 @@ test "zflecs.pairs.tag-tag" {
 }
 
 test "zflecs.pairs.component-tag" {
-    const world = ecs.init();
+    const world = ecs.init(std.testing.allocator);
     defer _ = ecs.fini(world);
 
     const Speed = u8;
@@ -435,7 +435,7 @@ test "zflecs.pairs.component-tag" {
 }
 
 test "zflecs.pairs.delete-children" {
-    const world = ecs.init();
+    const world = ecs.init(std.testing.allocator);
     defer _ = ecs.fini(world);
 
     const Camera = struct { id: u8 };
@@ -473,7 +473,7 @@ test "zflecs.pairs.delete-children" {
 }
 
 test "zflecs.struct-dtor-hook" {
-    const world = ecs.init();
+    const world = ecs.init(std.testing.allocator);
     defer _ = ecs.fini(world);
 
     const Chat = struct {
@@ -518,7 +518,7 @@ fn module(world: *ecs.world_t) callconv(.c) void {
     ecs.COMPONENT(world, Velocity);
 }
 test "zflecs-module" {
-    const world = ecs.init();
+    const world = ecs.init(std.testing.allocator);
     defer _ = ecs.fini(world);
 
     const module_id = ecs.import_c(world, module, "SimpleModule");
@@ -536,4 +536,14 @@ test "zflecs-module" {
 
     const p = ecs.get(world, bob, Position).?;
     print("Bob's position is ({d}, {d})\n", .{ p.x, p.y });
+}
+
+test "zflecs.uses caller-owned allocator" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const world = ecs.init(arena.allocator());
+    defer _ = ecs.fini(world);
+
+    _ = ecs.new_entity(world, "caller-owned allocator");
 }

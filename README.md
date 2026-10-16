@@ -51,7 +51,7 @@ fn move_system_with_it(it: *ecs.iter_t, positions: []Position, velocities: []con
 
 pub fn main(init : std.process.Init.Minimal) !void {
     _ = init;
-    const world = ecs.init();
+    const world = ecs.init(std.heap.page_allocator);
     defer _ = ecs.fini(world);
 
     ecs.COMPONENT(world, Position);
@@ -75,6 +75,9 @@ pub fn main(init : std.process.Init.Minimal) !void {
     std.debug.print("Bob's position is ({d}, {d})\n", .{ p.x, p.y });
 }
 ```
+
+The allocator passed to `ecs.init` is borrowed by Flecs and must remain valid
+until the world is passed to `ecs.fini`. Flecs does not deinitialize it.
 
 `zig build run` should result in:
 

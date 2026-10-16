@@ -1249,7 +1249,6 @@ const EcsAllocator = struct {
 
     const Alignment = 16;
 
-    var gpa: ?std.heap.DebugAllocator(.{}) = null;
     var allocator: ?std.mem.Allocator = null;
 
     fn alloc(size: i32) callconv(.c) ?*anyopaque {
@@ -1345,7 +1344,10 @@ fn flecs_abort() callconv(.c) noreturn {
 // Creation & Deletion
 //
 //--------------------------------------------------------------------------------------------------
-pub fn init() *world_t {
+/// Initialize a Flecs world using the provided allocator.
+///
+/// The allocator is borrowed and must remain valid until `fini` is called.
+pub fn init(allocator: std.mem.Allocator) *world_t {
     if (builtin.os.tag == .windows) {
         os.ecs_os_api.abort_ = flecs_abort;
     }
@@ -1353,8 +1355,7 @@ pub fn init() *world_t {
     assert(num_worlds == 0);
 
     if (num_worlds == 0) {
-        EcsAllocator.gpa = .{};
-        EcsAllocator.allocator = EcsAllocator.gpa.?.allocator();
+        EcsAllocator.allocator = allocator;
 
         os.ecs_os_api.malloc_ = &EcsAllocator.alloc;
         os.ecs_os_api.free_ = &EcsAllocator.free;
@@ -1461,8 +1462,6 @@ pub fn fini(world: *world_t) i32 {
     component_ids_hm.clearRetainingCapacity();
 
     if (num_worlds == 0) {
-        _ = EcsAllocator.gpa.?.deinit();
-        EcsAllocator.gpa = null;
         EcsAllocator.allocator = null;
     }
 
